@@ -6,7 +6,8 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 contract TokenMaster is ERC721 {
     address public owner;
     uint256 public totalOccasions;
-    uint256 public totalSupply;
+    // number of nft exist
+    uint256 totalSupply;
 
     struct Occasion {
         uint256 id;
@@ -18,14 +19,19 @@ contract TokenMaster is ERC721 {
         string time;
         string location;
     }
-
+    // to store on the blockchain
     mapping(uint256 => Occasion) occasions;
-    mapping(uint256 => mapping(address => bool)) public hasBought;
+    mapping(uint256 => mapping(address => bool)) public hasBought; // mapping for bought already / address -> the person who has buy already
+
+    // 1st uint256 is the id id of occasion then 2nd uint256 is the id of seat belong to when one thing is connected to other thing nested mapping works
     mapping(uint256 => mapping(uint256 => address)) public seatTaken;
+
     mapping(uint256 => uint256[]) seatsTaken;
 
     modifier onlyOwner() {
         require(msg.sender == owner);
+
+        // underscore corresponding to function body
         _;
     }
 
@@ -33,6 +39,7 @@ contract TokenMaster is ERC721 {
         string memory _name,
         string memory _symbol
     ) ERC721(_name, _symbol) {
+        // sender is the address of the calling function (constructor)
         owner = msg.sender;
     }
 
@@ -57,27 +64,23 @@ contract TokenMaster is ERC721 {
         );
     }
 
+    // buying nft/mint functions -> to create a tickets
+
     function mint(uint256 _id, uint256 _seat) public payable {
-        // Require that _id is not 0 or less than total occasions...
-        require(_id != 0);
+        require(_id != 0); // require that _id is not 0 or less than total occasion..
         require(_id <= totalOccasions);
+        require(msg.value >= occasions[_id].cost); // require that ETH sent is greater than cost ...
+        require(seatTaken[_id][_seat] == address(0)); // require that the seat is not taken and the seat is exist
+        require(_seat <= occasions[_id].maxTickets); // require
 
-        // Require that ETH sent is greater than cost...
-        require(msg.value >= occasions[_id].cost);
+        // ticket availability when purchased
+        occasions[_id].tickets -= 1;
 
-        // Require that the seat is not taken, and the seat exists...
-        require(seatTaken[_id][_seat] == address(0));
-        require(_seat <= occasions[_id].maxTickets);
+        hasBought[_id][msg.sender] = true; // updating buying status
 
-        occasions[_id].tickets -= 1; // <-- Update ticket count
-
-        hasBought[_id][msg.sender] = true; // <-- Update buying status
-        seatTaken[_id][_seat] = msg.sender; // <-- Assign seat
-
-        seatsTaken[_id].push(_seat); // <-- Update seats currently taken
-
+        seatTaken[_id][_seat] = msg.sender; //assigning seat
+        seatsTaken[_id].push(_seat); // setting up array so that nobody can't buy the seat which is sold out in the future
         totalSupply++;
-
         _safeMint(msg.sender, totalSupply);
     }
 

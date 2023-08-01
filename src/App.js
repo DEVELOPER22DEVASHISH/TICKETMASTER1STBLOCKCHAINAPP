@@ -28,6 +28,8 @@ function App() {
     setProvider(provider)
 
     const network = await provider.getNetwork()
+    // const address = config[network.chainId].TokenMaster.address
+    // const tokenMaster = new ethers.Contract(address, TokenMaster, provider)
     const tokenMaster = new ethers.Contract(config[network.chainId].TokenMaster.address, TokenMaster, provider)
     setTokenMaster(tokenMaster)
 
